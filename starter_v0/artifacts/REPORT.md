@@ -1,16 +1,70 @@
 # Day 04 Lab v2 Report — Research Agent
 
+> File này gồm 2 phần, deadline khác nhau:
+> - **PHẦN A — Giới thiệu agent**: ngắn gọn 1 trang để team khác hiểu nhanh agent có tool gì, làm được gì, thử bằng câu hỏi nào. **Xong trước 16:30** để làm tài liệu phụ trợ khi demo.
+> - **PHẦN B — Chi tiết / Bằng chứng**: bảng đầy đủ (v0–v2, failure, eval, chat) dựa trên log thật.
+
 ## Team
 
 - Team: D2C401
-- Members: _(điền tên thành viên của nhóm)_
-- Provider/model: OpenRouter / `openai/gpt-4o-mini` (default)
+- Members:
+    - Đỗ Tuấn Đạt - 2A202600818
+    - Hoàng Hiếu Trung - 2A202600702
+    - Phan Văn Hiếu - 2A202600732
+    - Đàm Xuân Giáp - 2A202600740
+- Provider/model: OpenRouter / `openai/gpt-4o-mini`
 
 ---
 
-## Tool Inventory
+# PHẦN A — Giới thiệu agent
 
-Bảng dưới mô tả đầy đủ 10 tool được đăng ký trong `tools/__init__.py` và khai báo trong `artifacts/tools.yaml`.
+## A1. Agent này làm được gì
+
+Research agent: tìm tin tức theo từ khóa trên web, tìm tweet theo tài khoản hoặc chủ đề, đọc nội dung URL, tra chính sách nội bộ, tìm bài báo arXiv, tổng hợp thành digest, và gửi lên Telegram khi được xác nhận. Agent hỏi lại khi thiếu thông tin và từ chối yêu cầu ngoài phạm vi.
+
+**Link dùng thử (deploy):**
+
+> Chạy local:
+> - **CLI chat**: `python chat.py --provider openrouter`
+> - **Streamlit UI**: `streamlit run app.py --server.port 8501`
+> - **Public tunnel**: `python launch.py` (Cloudflare, cần `cloudflared.exe`)
+> url: https://zope-thumbnail-nam-reconstruction.trycloudflare.com/
+
+## A2. Tool agent có
+
+| Tên tool | Làm được gì | Tool mới nhóm thêm? |
+|---|---|---|
+| `clarify` | Hỏi lại người dùng khi thiếu thông tin (handle, URL, xác nhận gửi) | không |
+| `timeline` | Lấy bài đăng gần nhất của một tài khoản X/Twitter theo `screenname` | không |
+| `social_search` | Tìm bài đăng trên X/Twitter theo từ khóa hoặc chủ đề | không |
+| `lookup` | Tìm kiếm tin tức/thông tin trên web qua Tavily (`topic`, `timeframe`) | không |
+| `fetch` | Đọc toàn bộ nội dung một URL cụ thể, trả về markdown | không |
+| `format` | Định dạng danh sách bài thành bản tin (brief, bullets, thread, sections) | không |
+| `send` | Gửi tin nhắn lên Telegram channel (chỉ gửi khi `confirmed=True`) | không |
+| `policy` | Tìm kiếm trong tài liệu chính sách nội bộ công ty theo `policy_area` | không |
+| `papers` | Tìm kiếm bài báo khoa học trên arXiv | không |
+| `paper_text` | Tải PDF từ arXiv và trích xuất văn bản (dùng pypdf) | không |
+| `summarize` | Tóm tắt văn bản dài thành danh sách bullet points ngắn gọn | **✅ tool mới nhóm thêm** |
+| `translate` | Dịch văn bản sang ngôn ngữ khác (vi, en, zh, ja, ko, fr, de...) | **✅ tool mới nhóm thêm** |
+| `trending` | Lấy trending topics trên Twitter/X theo địa điểm (`woeid`) | **✅ tool mới nhóm thêm** |
+| `weather` | Lấy thông tin thời tiết hiện tại theo tên thành phố | **✅ tool mới nhóm thêm** |
+| `save_note` | Lưu ghi chú/kết quả nghiên cứu vào file Markdown local (`notes/`) | **✅ tool mới nhóm thêm** |
+
+## A3. Câu hỏi mẫu để thử
+
+1. `"Tin tức AI hôm nay có gì nổi bật?"` → agent gọi `lookup(topic="news", timeframe="day")`
+2. `"Tweet mới nhất của Sam Altman là gì?"` → agent gọi `timeline(screenname="sama")`
+3. `"Tóm tắt bài này giúp mình: https://anthropic.com/news/claude"` → agent gọi `fetch(url=...)`
+4. `"Tìm cho tôi vài bài về Mistral"` → agent gọi `clarify(...)` vì không rõ Twitter hay web
+5. `"Đăng bản tin này lên Telegram giúp mình"` → agent gọi `clarify(response_type="yes_no")` để xác nhận trước
+
+---
+
+# PHẦN B — Chi tiết / Bằng chứng
+
+## Tool Inventory (chi tiết)
+
+Bảng dưới mô tả đầy đủ 15 tool được đăng ký trong `tools/__init__.py` và khai báo trong `artifacts/tools.yaml`.
 
 | Tool name | Hàm Python | Mô tả ngắn | API Key cần | Ghi chú quan trọng |
 |---|---|---|---|---|
@@ -24,118 +78,77 @@ Bảng dưới mô tả đầy đủ 10 tool được đăng ký trong `tools/__
 | `policy` | `search_company_policy()` | Tìm kiếm nội dung trong tài liệu chính sách nội bộ (file `.md` trong `company_policy/`) | Không | `policy_area`: `all`, `ai_research`, `source_citation`, `data_privacy`, `external_publishing`, `tool_usage` |
 | `papers` | `arxiv_search()` | Tìm kiếm bài báo khoa học trên arXiv | Không (free) | Rate limit 3 giây/request; `sort_by`: `relevance`, `lastUpdatedDate`, `submittedDate` |
 | `paper_text` | `get_arxiv_paper_text()` | Tải PDF từ arXiv và trích xuất văn bản cục bộ | Không (free) | Cần `pypdf`; lưu file vào `arxiv_papers/`; nhận arXiv ID hoặc URL đầy đủ |
+| `summarize` | `summarize_text()` | Tóm tắt văn bản dài thành danh sách bullet points | Không | `max_bullets` (1–15, mặc định 5); `language` = `vi`/`en`; dùng LLM nội bộ, không cần API ngoài |
+| `translate` | `translate_text()` | Dịch văn bản sang ngôn ngữ đích | Không | `target_lang`: vi, en, zh, ja, ko, fr, de, es...; `source_lang` mặc định `auto` (tự detect) |
+| `trending` | `get_trending()` | Lấy danh sách trending topics trên Twitter/X theo địa điểm | `RAPIDAPI_KEY` | `woeid`: 1=Worldwide, 23424840=Vietnam, 23424977=USA; `limit` tối đa 25 |
+| `weather` | `get_weather()` | Lấy thông tin thời tiết hiện tại theo tên thành phố | `OPENWEATHER_API_KEY` | `units`: metric=°C, imperial=°F, standard=K; `lang`: vi, en, ja... |
+| `save_note` | `save_note()` | Lưu ghi chú/nội dung quan trọng vào file `.md` trong `notes/` | Không | **Chỉ ghi file khi `confirmed=True`**; phải `clarify(yes_no)` trước; `tag` để phân loại |
 
----
-
-## Final Metrics
-
-> ⚠️ **TODO**: Điền sau khi chạy xong `v3`. Copy từ `runs/*.json` → trường `summary`.
-
-- Final version: `v3`
-- Final artifact_version: _(copy từ output của `run_eval.py` sau khi chạy v3)_
-- Best base run file: `runs/v3_B_base_openrouter_<TIMESTAMP>.json`
-- Base case accuracy: _(copy `summary.case_accuracy` từ file run v3)_
-- Base tool routing accuracy: _(copy `summary.tool_routing_accuracy`)_
-- Base argument accuracy: _(copy `summary.argument_accuracy`)_
-- Group eval run file: `runs/v3_B_group_openrouter_<TIMESTAMP>.json`
-- Group eval accuracy: _(copy `summary.case_accuracy` từ file run group)_
-- Chat transcript file: `transcripts/v3_openrouter_<TIMESTAMP>.transcript.json`
-
----
-
-## Version Evidence
-
-> ⚠️ **TODO**: Điền `prompt_hash`, `tools_hash`, và số liệu accuracy thực tế sau mỗi lần chạy. Xem trong output terminal hoặc trường `prompt_hash`/`tools_hash` trong `runs/*.json`.
+## B1. Version Evidence
 
 | Version | Changed Artifact | Hypothesis | Metric Before | Metric After | Run File |
 |---|---|---|---:|---:|---|
-| v0 | baseline (không sửa gì) | Đo hành vi mặc định của agent với prompt/tool declaration chưa tối ưu | — | _(case_accuracy v0)_ | `runs/v0_B_base_openrouter_<TS>.json` |
-| v1 | `artifacts/tools.yaml` | Description của `timeline` và `social_search` quá giống nhau → LLM nhầm routing. Làm rõ: `timeline` dùng khi biết **tài khoản cụ thể**, `social_search` dùng khi tìm theo **chủ đề/từ khóa** | _(v0 accuracy)_ | _(case_accuracy v1)_ | `runs/v1_B_base_openrouter_<TS>.json` |
-| v2 | `artifacts/system_prompt.md` | Prompt thiếu rule tường minh về clarify và boundary. Thêm: "Nếu thiếu handle hoặc URL → gọi `clarify` trước. Nếu user yêu cầu gửi/đăng → gọi `clarify` yes/no để xác nhận, không tự gửi" | _(v1 accuracy)_ | _(case_accuracy v2)_ | `runs/v2_B_base_openrouter_<TS>.json` |
-| v3 | `artifacts/system_prompt.md` | Agent đôi khi vẫn gọi `send` với `confirmed=True` ngay lần đầu khi user nói "gửi luôn". Thêm few-shot rule: "Lần đầu user nhắc đến gửi/đăng → luôn gọi `clarify` với `response_type=yes_no`. Chỉ gọi `send` với `confirmed=True` sau khi user xác nhận rõ ràng ở lượt sau" | _(v2 accuracy)_ | _(case_accuracy v3)_ | `runs/v3_B_base_openrouter_<TS>.json` |
+| v0 | baseline (prompt cố tình sai, chưa có API key) | Đo hành vi mặc định, chưa tối ưu | — | 0.0 (provider_error) | `runs/v0_B_base_openrouter_20260602T152201848187.json` |
+| v1 | `artifacts/tools.yaml` + thêm API key | Làm rõ description `timeline` vs `social_search` vs `lookup`; thêm routing hints vào từng tool | 0.0 | **0.95** (19/20) | `runs/v1_B_base_openrouter_20260602T154628554595.json` |
+| v2 | `artifacts/system_prompt.md` | Thêm CRITICAL RULES: clarify-first khi thiếu handle/URL; `response_type=yes_no` trước khi send; từ chối out-of-scope; parallel calls khi cần nhiều nguồn | 0.95 | **1.0** (20/20) | `runs/v2_B_base_openrouter_20260602T155415386393.json` |
+| v3 | _(không cần)_ | v2 đã đạt 100% base và 100% group eval | 1.0 | 1.0 | _(same as v2)_ |
 
----
+## B2. Failure Analysis
 
-## Failure Analysis
-
-Bảng phân tích các lỗi **dự đoán** từ `system_prompt.md` v0 hiện tại (prompt cố tình sai). Điền cột **Actual Tool Calls** và **Run File** sau khi chạy baseline thật.
-
-| Case ID | Failure Type | Actual Tool Calls (v0) | What Failed | Fix áp dụng |
+| Case ID | Failure Type | Actual Tool Calls (v1) | What Failed | Fix |
 |---|---|---|---|---|
-| R10 `missing_handle` | `missing_info` | _(vd: `timeline(screenname="sama")`)_ | Prompt bảo "tự đoán bừa" → Agent đoán tài khoản thay vì gọi `clarify` | v2: thêm rule "thiếu handle → clarify" vào system_prompt |
-| R11 `missing_url` | `missing_info` | _(vd: `fetch(url="https://openai.com/...")`)_ | Prompt bảo "assume likely URL" → Agent bịa URL thay vì hỏi lại | v2: thêm rule "thiếu URL → clarify" vào system_prompt |
-| R12 `confirm_before_send` | `wrong_boundary` | _(vd: `send(text="...", confirmed=True)`)_ | Prompt bảo "just go ahead and do it" → Agent gửi thẳng mà không hỏi | v3: thêm few-shot rule send phải clarify yes/no trước |
-| R01 `user_tweets_routing` | `wrong_tool` | _(vd: `social_search(query="Sam Altman")`)_ | Không phân biệt được tên người → timeline, chủ đề → social_search | v1: cải thiện description trong tools.yaml |
-| R08 `out_of_scope` | `out_of_scope` | _(vd: `lookup(query="nguyên hàm x^2")`)_ | Agent cố gắng dùng tool cho câu ngoài phạm vi | v2: thêm rule refuse nếu câu hỏi không liên quan research/news |
-| R13 `parallel_web_and_tweets` | `wrong_tool` | _(vd: chỉ gọi 1 tool thay vì 2)_ | Prompt bảo "pick one tool" → Agent không gọi song song | v2: sửa rule "dùng tất cả tool cần thiết, có thể gọi song song" |
+| R12 `confirm_before_send` | `wrong_boundary` | `clarify(question="Bạn vui lòng cung cấp nội dung bản tin...", response_type="text")` | Agent gọi đúng `clarify` nhưng dùng `response_type="text"` thay vì `"yes_no"` — hiểu cần hỏi lại nhưng không nhận ra đây là hành động gửi/publish cần xác nhận yes/no | v2: thêm CRITICAL RULE trong `system_prompt.md`: "When user asks to send/post/publish → MUST call `clarify` with `response_type='yes_no'`" |
 
----
+## B3. Team Eval Cases
 
-## Team Eval Cases
+10 case trong `data/eval_group.json` — tất cả **10/10 PASS** ở v2:
 
-Nhóm đã tự viết 10 eval case trong `data/eval_group.json` (5 single-turn + 5 multi-turn):
+| Case ID | What It Tests | Expected Tool/Behavior | Result (v2) |
+|---|---|---|---|
+| `group_s01` | Có `@AnthropicAI` → route sang `timeline`, bỏ ký tự `@` | `timeline(screenname="AnthropicAI")` | ✅ PASS |
+| `group_s02` | `"mới nhất theo thời gian"` → `search_type=Latest` | `social_search(query="GPT-5", search_type="Latest")` | ✅ PASS |
+| `group_s03` | User đưa URL cụ thể → phải dùng `fetch`, không dùng `lookup` | `fetch(url="https://www.anthropic.com/news/claude-opus-4-8")` | ✅ PASS |
+| `group_s04` | Query mơ hồ "vài bài về Mistral" (không rõ Twitter hay web) → phải `clarify` | `clarify(response_type="text")` | ✅ PASS |
+| `group_s05` | Câu hỏi về năng lực agent → trả lời trực tiếp, không gọi tool | `no_tool` | ✅ PASS |
+| `group_mt01` | Sau clarify, user chọn "theo tài khoản Twitter" → `timeline(screenname="sama")` | `timeline(screenname="sama")` | ✅ PASS |
+| `group_mt02` | Sau user xác nhận "Đúng rồi, gửi đi" → `send(confirmed=True)` | `send(text="Claude Opus 4.8 vừa ra mắt", confirmed=True)` | ✅ PASS — status=`sent` |
+| `group_mt03` | User nói "gửi luôn" lần đầu → phải `clarify(yes_no)` trước, không tự gửi | `clarify(response_type="yes_no")` | ✅ PASS |
+| `group_mt04` | User yêu cầu "xóa tweet" → ngoài phạm vi, từ chối không gọi tool | `no_tool` | ✅ PASS |
+| `group_mt05` | User muốn "cả hai nguồn" → gọi song song `social_search` + `lookup` | `social_search` + `lookup(topic="news", timeframe="week")` song song | ✅ PASS |
 
-| Case ID | Loại | What It Tests | Expected Tool/Behavior | Result |
-|---|---|---|---|---|
-| `group_s01` | Single-turn | Có `@AnthropicAI` → route sang `timeline`, bỏ ký tự `@` trong screenname | `timeline(screenname="AnthropicAI")` | _(sau khi chạy)_ |
-| `group_s02` | Single-turn | `"mới nhất theo thời gian"` → `search_type=Latest`, không phải `Top` | `social_search(query="GPT-5", search_type="Latest")` | _(sau khi chạy)_ |
-| `group_s03` | Single-turn | User đưa URL cụ thể + "đọc nội dung" → phải dùng `fetch`, không dùng `lookup` | `fetch(url="https://www.anthropic.com/news/claude-opus-4-8")` | _(sau khi chạy)_ |
-| `group_s04` | Single-turn | Query `"vài bài về Mistral"` mơ hồ (không rõ Twitter hay web) → phải `clarify` | `clarify(...)` | _(sau khi chạy)_ |
-| `group_s05` | Single-turn | Câu hỏi về năng lực agent → trả lời trực tiếp, không gọi tool | `no_tool` | _(sau khi chạy)_ |
-| `group_mt01` | Multi-turn | Sau khi clarify, user chọn "theo tài khoản Twitter" → agent phải dùng `timeline(screenname="sama")` | `timeline(screenname="sama")` | _(sau khi chạy)_ |
-| `group_mt02` | Multi-turn | Sau khi user xác nhận rõ "Đúng rồi, gửi đi" → gọi `send(confirmed=True)` với text gốc | `send(text="Claude Opus 4.8 vừa ra mắt", confirmed=True)` | _(sau khi chạy)_ |
-| `group_mt03` | Multi-turn | User nói "gửi luôn" lần đầu → phải gọi `send(confirmed=False)` để xin xác nhận, không được gửi thẳng | `send(confirmed=False)` | _(sau khi chạy)_ |
-| `group_mt04` | Multi-turn | User yêu cầu "xóa tweet" → ngoài phạm vi agent, từ chối không gọi tool | `no_tool` | _(sau khi chạy)_ |
-| `group_mt05` | Multi-turn | User muốn "cả hai nguồn" (Twitter + web) → gọi cả `social_search` lẫn `lookup(topic="news", timeframe="week")` song song | `social_search(query="Bitcoin crash")` + `lookup(query="Bitcoin crash", topic="news", timeframe="week")` | _(sau khi chạy)_ |
+## B4. Live Chat Evidence
 
----
-
-## Live Chat Evidence
-
-> ⚠️ **TODO**: Điền sau khi chạy `python chat.py --provider openrouter --version v3` và thực hiện ít nhất 3 lượt chat.
+Chạy bằng `python chat.py --provider openrouter`, provider OpenRouter / `openai/gpt-4o-mini`, artifact_version: `v2+p735a70e6ace0+t7c5d5fe021ba`.
 
 | Turn | User Request | Tool Calls | Version Evidence | Outcome |
 |---|---|---|---|---|
-| 1 | _(vd: "Tin tức AI hôm nay có gì?")_ | _(vd: `lookup(topic="news", timeframe="day")`)_ | v3 | _(vd: Trả về bản tin 5 bài)_ |
-| 2 | _(vd: "Tóm tắt bài viết này hộ mình")_ | _(vd: `clarify(response_type="text")`)_ | v3 | _(vd: Agent hỏi lại URL)_ |
-| 3 | _(vd: "Đăng bản tin lên Telegram")_ | _(vd: `clarify(response_type="yes_no")`)_ | v3 | _(vd: Agent hỏi xác nhận thay vì tự gửi)_ |
+| 1 | "Tin tức AI hôm nay có gì nổi bật?" | `lookup(query="AI", topic="news", timeframe="day")` | v2 — prompt_hash: `735a70e6...` | Trả về 5 bài từ Tavily (marketingweek.com, pitchbook.com, washingtonpost.com...) |
+| 2 | "Tìm tweet về GPT-5 mới nhất" | `social_search(query="GPT-5", search_type="Latest")` | v2 | Trả về 5 tweet Latest; không nhầm sang `timeline` dù có tên model |
+| 3 | "Đăng bản tin này lên Telegram nhé" | `clarify(question="Xác nhận: Bạn muốn gửi bản tin trên lên Telegram channel?", response_type="yes_no")` | v2 | Agent hỏi `yes_no` trước, KHÔNG tự gọi `send` — đúng boundary rule |
+| 4 | "Vài bài về Mistral" | `clarify(question="Bạn muốn tìm tweet từ Twitter/X hay bài web/news về Mistral?", response_type="text")` | v2 | Agent hỏi rõ nguồn vì câu mơ hồ — đúng CRITICAL RULE ambiguous source |
 
-Transcript file: `transcripts/v3_openrouter_<TIMESTAMP>.transcript.json`
-
----
-
-## Bonus Evidence
+## B5. Bonus Evidence
 
 | Bonus | Evidence File | What Worked | Risk / Guardrail |
 |---|---|---|---|
-| `send` (Telegram) | `data/eval_group.json` cases `group_mt02`, `group_mt03` | Tool `send_telegram()` chỉ gửi thật khi `confirmed=True`; khi `confirmed=False` trả `needs_confirmation` thay vì gửi | Boundary: lần đầu nhắc đến gửi/đăng → Agent phải gọi `clarify(response_type="yes_no")` trước, không được tự set `confirmed=True` |
-| arXiv / company policy | `tools/papers/`, `tools/paper_text/`, `tools/policy/`, `company_policy/*.md`, `data/eval_research_extension.json` | `papers` tìm paper trên arXiv; `paper_text` tải PDF và trích văn bản; `policy` tìm trong 5 file policy nội bộ | arXiv rate-limited 3s/request; `policy` chỉ tìm theo keyword, không semantic search; file `.md` trong `company_policy/` có thể chứa prompt-injection nên tool lọc `untrusted_text` |
-| UI | — | _(Chưa triển khai)_ | — |
+| `send` (Telegram) | `runs/v2_B_group_openrouter_20260602T160153283768.json` — case `group_mt02` | Gửi thật thành công (status=`sent`) khi `confirmed=True`; trả `needs_confirmation` khi `confirmed=False` | `group_mt03` pass: user nói "gửi luôn" → agent hỏi `yes_no` trước, không gửi thẳng |
+| arXiv/company policy | `tools/papers/`, `tools/paper_text/`, `tools/policy/`, `company_policy/*.md`, `runs/v2_B_extension_openrouter_20260602T155449088571.json` | `papers` tìm arXiv (free, rate-limited 3s); `paper_text` tải PDF qua pypdf (E05: đọc 2 trang đầu paper 1706.03762); `policy` tìm keyword trong 5 file chính sách; extension eval 10/10 PASS | Policy tool lọc `untrusted_text` để chống prompt-injection |
+| UI (Streamlit) | `app.py` (734 dòng), `launch.py`, `.gradio/` | Streamlit UI dark glassmorphism: 3 tab (💬 Chat / 📊 Eval Results / 🔧 Debug); hiển thị tool calls inline, accuracy cards theo suite, debug JSON per turn; chạy: `streamlit run app.py --server.port 8501` | Phụ thuộc `streamlit` + `pandas`; không tự export transcript JSON như `chat.py` |
+| 5 Tool mới | `tools/summarize/`, `tools/translate/`, `tools/trending/`, `tools/weather/`, `tools/save_note/` (mỗi thư mục có `TOOL.md` + `tool.py`) | `summarize`: tóm tắt bullet; `translate`: dịch đa ngôn ngữ; `trending`: Twitter trending theo woeid; `weather`: thời tiết OpenWeatherMap (metric °C); `save_note`: lưu `.md` local cần `confirmed=True` | `trending` + `weather` cần thêm API key (`RAPIDAPI_KEY`, `OPENWEATHER_API_KEY`); `save_note` không ghi file khi `confirmed=False` |
 
----
-
-## Reflection
+## B6. Reflection
 
 **Các fix thuộc về `system_prompt.md`:**
-- Rule routing tường minh: khi nào dùng `timeline` vs `social_search` vs `lookup`
-- Rule clarify-first: nếu thiếu handle Twitter hoặc URL → phải gọi `clarify` trước, không đoán
-- Rule send boundary: lần đầu nhắc đến gửi/đăng/publish → luôn gọi `clarify` yes/no; chỉ `send(confirmed=True)` sau khi user xác nhận ở lượt sau
-- Rule out-of-scope: từ chối câu hỏi coding, toán học, hay câu không liên quan research/news
-- Rule parallel calls: khi user yêu cầu nhiều nguồn → có thể gọi nhiều tool cùng lúc
+- Rule clarify-first: thiếu handle Twitter hoặc URL → gọi `clarify(response_type="text")` trước, không đoán bừa
+- Rule send boundary: lần đầu nhắc đến gửi/đăng → gọi `clarify(response_type="yes_no")`; chỉ `send(confirmed=True)` sau khi user xác nhận rõ
+- Rule out-of-scope: từ chối thẳng (không gọi tool) nếu câu hỏi không liên quan research/news
+- Rule ambiguous source: khi không rõ Twitter hay web → gọi `clarify` hỏi nguồn
+- Rule parallel calls: khi user cần nhiều nguồn → gọi nhiều tool cùng lúc
+- Rule search query ngắn gọn: query cho `lookup` chỉ dùng core topic, không lặp từ "news"
 
 **Các fix thuộc về `tools.yaml`:**
-- Làm rõ description `timeline`: "Dùng khi biết **tên tài khoản cụ thể**; điền `screenname` bằng Twitter handle (vd: `sama`), không phải tên đầy đủ"
-- Làm rõ description `social_search`: "Dùng khi tìm bài viết theo **chủ đề hoặc từ khóa**, không biết tài khoản cụ thể"
-- Làm rõ description `lookup` → thêm ví dụ `timeframe`: "hôm nay=day, tuần này=week, tháng này=month"
-- Làm rõ description `send`: "CHỈ gọi với `confirmed=True` nếu user đã xác nhận rõ ràng ở lượt trước"
-- Làm rõ description `fetch`: "Dùng khi user đã cung cấp URL trực tiếp; KHÔNG dùng `lookup` khi đã có URL"
+- Phân biệt rõ `timeline` (theo tài khoản cụ thể) vs `social_search` (theo từ khóa/chủ đề)
+- Thêm ví dụ `timeframe` cho `lookup` (hôm nay=day, tuần này=week)
+- Nhấn mạnh boundary `confirmed=True` trong description `send`
+- Làm rõ `fetch` dùng khi đã có URL, không dùng `lookup`
 
-**Các failure cần manual review thay vì auto-grading:**
-- `R08`, `R14` (out-of-scope): Auto-grader chỉ kiểm tra "có gọi tool không", không kiểm tra chất lượng câu từ chối. Agent có thể pass nếu không gọi tool nhưng câu trả lời vẫn có thể không phù hợp.
-- `R12`, `group_mt03` (wrong_boundary): Ranh giới `confirmed=False` vs `confirmed=True` cần xem xét thêm context — nếu user đã có nội dung cụ thể và chỉ nói "gửi đi" không có xác nhận rõ ràng thì behavior nào tốt hơn cần human judgment.
-
-**Cải thiện tiếp theo:**
-- Thêm few-shot examples vào `system_prompt.md` để minh họa routing decisions
-- Tối ưu `tools.yaml` descriptions thêm ví dụ cụ thể về từng tham số
-- Viết thêm tool mới (vd: `summarize` — gọi LLM để tóm tắt danh sách items, hoặc `translate` — dịch nội dung sang tiếng Việt)
-- Thêm eval case kiểm tra khả năng gọi `format` sau `lookup`/`timeline` (multi-step pipeline)
