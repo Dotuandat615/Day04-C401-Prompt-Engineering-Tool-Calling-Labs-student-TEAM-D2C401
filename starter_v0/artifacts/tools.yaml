@@ -9,7 +9,7 @@
 tools:
   # ---------------- Core tools ----------------
   - name: clarify
-    description: "Gửi một câu hỏi cho người dùng."
+    description: "Hỏi người dùng khi thiếu thông tin bắt buộc hoặc cần xác nhận. Use response_type text for missing account/URL/content, and response_type yes_no before any send/post/publish action. Do not ask unnecessary follow-up questions when the needed input is already in the conversation."
     parameters:
       type: object
       properties:
@@ -19,7 +19,7 @@ tools:
       required: [question]
 
   - name: timeline
-    description: "Lấy các bài đăng gần đây."
+    description: "Retrieve recent posts from ONE specific social media account. Use only when the target account is explicitly known or can be mapped from a famous public figure to a standard handle. Do not use for keyword search across multiple accounts or for discovering a handle via web search. Example mappings: Elon Musk -> elonmusk, Sam Altman -> sama, Andrej Karpathy -> karpathy."
     parameters:
       type: object
       properties:
@@ -28,7 +28,7 @@ tools:
       required: [screenname]
 
   - name: social_search
-    description: "Tìm trên mạng xã hội."
+    description: "Search social media posts matching keywords across many accounts. Use when the user is looking for topics, trends, discussions, or posts and has not specified a single account. Set search_type to Top when the user says popular/top/trending, and Latest when the user says newest/recent/latest. Use a short keyword query, not a full sentence."
     parameters:
       type: object
       properties:
@@ -38,7 +38,7 @@ tools:
       required: [query]
 
   - name: lookup
-    description: "Tra cứu thông tin trên internet."
+    description: "Search the web and return candidate pages. Use for web/news search and source discovery. Keep query concise: use the core topic or noun phrase, not a rewritten question or headline. For news requests, use topic=news. Map time words directly: hôm nay/today -> timeframe=day, tuần này/this week -> timeframe=week. Do not pad the query with filler words like 'highlights', 'results', or 'today' unless they are the actual topic."
     parameters:
       type: object
       properties:
@@ -49,7 +49,7 @@ tools:
       required: [query]
 
   - name: fetch
-    description: "Lấy nội dung từ một địa chỉ."
+    description: "Lấy nội dung từ một địa chỉ URL đã biết sẵn. Use this after the URL is already available in the conversation; do not use it to search for URLs."
     parameters:
       type: object
       properties:
@@ -79,7 +79,7 @@ tools:
 
   # ---------------- Bonus tools ----------------
   - name: send
-    description: "Gửi một đoạn văn bản đi."
+    description: "Gửi một đoạn văn bản đi. Only use after the user has explicitly confirmed the content and destination; if confirmation is needed, ask first with clarify and response_type yes_no."
     parameters:
       type: object
       properties:
