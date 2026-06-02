@@ -1,1 +1,5 @@
 version,author,changed_artifact,artifact_version,prompt_hash,tools_hash,reason,hypothesis,metric_before,metric_after,run_file
+v0,Nguoi1,baseline,v0,<copy_from_run_json>,<copy_from_run_json>,Chạy baseline để đo điểm ban đầu,N/A,0.00,0.00,runs/v0_base_<timestamp>.json
+v1,Nguoi2,tools.yaml,v1.1,<copy_from_run_json>,<copy_from_run_json>,Description tool timeline và social_search quá giống nhau — agent không phân biệt được khi nào dùng tool nào,Làm rõ description sẽ giảm wrong_tool routing errors,0.00,0.00,runs/v1_base_<timestamp>.json
+v2,Nguoi2,system_prompt.md,v1.2,<copy_from_run_json>,<copy_from_run_json>,Thiếu routing rule tường minh trong prompt — agent đoán sai khi request có nhiều tool phù hợp,Thêm routing table + clarify rule sẽ tăng case_accuracy và tool_routing_accuracy,0.00,0.00,runs/v2_base_<timestamp>.json
+v3,Nguoi2,system_prompt.md,v1.3,<copy_from_run_json>,<copy_from_run_json>,Agent gửi send(confirmed=true) ngay lần đầu mà không preview — vi phạm confirmation flow,Thêm few-shot example về send confirmation flow sẽ fix lỗi wrong_arg_value cho send cases,0.00,0.00,runs/v3_base_<timestamp>.json

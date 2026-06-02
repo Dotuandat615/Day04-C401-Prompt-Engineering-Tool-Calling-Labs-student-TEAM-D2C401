@@ -3,5 +3,129 @@
   "dataset_role": "group",
   "description": "Case do NHÓM tự viết thêm để cover thêm trường hợp. Mỗi case cần: id, phase='B', query HOẶC turns, failure_type (thuộc allowed_failure_types), và expect (tool_calls[...] hoặc no_tool=true). Nên kèm metadata.what_it_tests.",
   "allowed_failure_types": ["wrong_tool", "wrong_arg_value", "wrong_boundary", "unnecessary_tool", "out_of_scope", "missing_info"],
-  "cases": []
+  "cases": [
+    {
+      "id": "group_s01",
+      "phase": "B",
+      "query": "Cho tôi xem các bài đăng gần nhất của @OpenAI",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [{ "name": "timeline", "args": { "screenname": "OpenAI" } }]
+      },
+      "metadata": { "what_it_tests": "Phân biệt timeline vs social_search khi user cung cấp @username rõ ràng" }
+    },
+    {
+      "id": "group_s02",
+      "phase": "B",
+      "query": "Tìm các bài viết trending về large language model tuần này",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [{ "name": "social_search", "args": { "query": "large language model", "search_type": "Top" } }]
+      },
+      "metadata": { "what_it_tests": "Dùng social_search với search_type=Top khi user nói 'trending' và tìm theo keyword không có account" }
+    },
+    {
+      "id": "group_s03",
+      "phase": "B",
+      "query": "Đọc nội dung trang này: https://openai.com/blog/gpt-4",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [{ "name": "fetch", "args": { "url": "https://openai.com/blog/gpt-4" } }]
+      },
+      "metadata": { "what_it_tests": "Dùng fetch khi user cung cấp URL cụ thể — không dùng lookup hay social_search" }
+    },
+    {
+      "id": "group_s04",
+      "phase": "B",
+      "query": "Tìm tin tức về AI trong tuần qua",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [{ "name": "lookup", "args": { "query": "AI news", "topic": "news", "timeframe": "week" } }]
+      },
+      "metadata": { "what_it_tests": "Dùng lookup với topic=news và timeframe=week khi user tìm tin tức web (không phải Twitter)" }
+    },
+    {
+      "id": "group_s05",
+      "phase": "B",
+      "query": "Tìm bài đăng về AI",
+      "failure_type": "missing_info",
+      "expect": {
+        "tool_calls": [{ "name": "clarify", "args": {} }]
+      },
+      "metadata": { "what_it_tests": "Dùng clarify khi query quá mơ hồ — không rõ tìm trên Twitter/X hay web" }
+    },
+    {
+      "id": "group_mt01",
+      "phase": "B",
+      "turns": [
+        { "role": "user", "content": "Tìm bài của Elon" },
+        { "role": "assistant", "content": "Bạn muốn tôi tìm theo tài khoản Twitter của Elon Musk (@elonmusk) hay tìm bài viết về ông ấy trên web?" },
+        { "role": "user", "content": "Theo tài khoản Twitter của ông ấy" }
+      ],
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [{ "name": "timeline", "args": { "screenname": "elonmusk" } }]
+      },
+      "metadata": { "what_it_tests": "Sau clarify multi-turn, agent phải chọn đúng timeline khi user xác nhận tài khoản Twitter" }
+    },
+    {
+      "id": "group_mt02",
+      "phase": "B",
+      "turns": [
+        { "role": "user", "content": "Đăng bài này lên kênh Telegram: AI is changing the world" },
+        { "role": "assistant", "content": "Bạn có chắc muốn gửi nội dung 'AI is changing the world' lên Telegram không? Trả lời 'có' để xác nhận." },
+        { "role": "user", "content": "Có, gửi đi" }
+      ],
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [{ "name": "send", "args": { "text": "AI is changing the world", "confirmed": true } }]
+      },
+      "metadata": { "what_it_tests": "Sau confirmation turn, agent gọi send với confirmed=true — không phải confirmed=false lần nữa" }
+    },
+    {
+      "id": "group_mt03",
+      "phase": "B",
+      "turns": [
+        { "role": "user", "content": "Cho tôi xem tin tức AI hôm nay" },
+        { "role": "assistant", "content": "Bạn muốn tìm tin tức AI trên Twitter/X hay tìm trên web?" },
+        { "role": "user", "content": "Trên web thôi" }
+      ],
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [{ "name": "lookup", "args": { "query": "AI news today", "topic": "news", "timeframe": "day" } }]
+      },
+      "metadata": { "what_it_tests": "Sau clarify phân biệt Twitter vs web, agent chọn lookup với topic=news và timeframe=day" }
+    },
+    {
+      "id": "group_mt04",
+      "phase": "B",
+      "turns": [
+        { "role": "user", "content": "Fetch bài báo này rồi tóm tắt: https://techcrunch.com/category/artificial-intelligence" },
+        { "role": "assistant", "content": "[Kết quả fetch nội dung bài báo]" },
+        { "role": "user", "content": "Bây giờ format thành digest gửi cho tôi" }
+      ],
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [{ "name": "format", "args": {} }]
+      },
+      "metadata": { "what_it_tests": "Sau fetch, agent dùng format để trình bày kết quả thành digest — không gọi lại fetch hay lookup" }
+    },
+    {
+      "id": "group_mt05",
+      "phase": "B",
+      "turns": [
+        { "role": "user", "content": "Tìm bài về crypto crash" },
+        { "role": "assistant", "content": "Bạn muốn tìm trên Twitter hay trên web tin tức?" },
+        { "role": "user", "content": "Cả hai" }
+      ],
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          { "name": "social_search", "args": { "query": "crypto crash" } },
+          { "name": "lookup", "args": { "query": "crypto crash", "topic": "news" } }
+        ]
+      },
+      "metadata": { "what_it_tests": "Khi user muốn cả hai nguồn (Twitter + web), agent phải gọi cả social_search và lookup — không chỉ một tool" }
+    }
+  ]
 }
