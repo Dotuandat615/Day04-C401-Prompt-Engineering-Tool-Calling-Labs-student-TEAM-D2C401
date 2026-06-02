@@ -1,159 +1,194 @@
-[
-  {
-    "id": "group_s01",
-    "phase": "B",
-    "query": "Cho tôi xem các bài đăng gần nhất của tài khoản @AnthropicAI",
-    "failure_type": "wrong_tool",
-    "expect": {
-      "tool_calls": [
-        { "name": "timeline", "args": { "screenname": "AnthropicAI" } }
-      ]
+{
+  "dataset_id": "day04_v2_research_group",
+  "dataset_role": "group",
+  "description": "Group eval cho research agent: routing nâng cao, boundary gửi nội dung, multi-turn clarify. Bổ sung vào eval_base.json để test thêm các kịch bản phức tạp.",
+  "cases": [
+    {
+      "id": "group_s01",
+      "phase": "B",
+      "suite": "group",
+      "query": "Cho tôi xem các bài đăng gần nhất của tài khoản @AnthropicAI",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          { "name": "timeline", "args": { "screenname": "AnthropicAI" } }
+        ]
+      },
+      "metadata": {
+        "skill": "routing_user_tweets_handle",
+        "difficulty": "easy",
+        "what_it_tests": "Có @username + 'bài đăng của tài khoản' phải route sang timeline, không phải social_search; screenname bỏ ký tự @."
+      }
     },
-    "metadata": {
-      "what_it_tests": "Có @username + 'bài đăng của tài khoản' phải route sang timeline, không phải social_search; screenname bỏ ký tự @."
-    }
-  },
-  {
-    "id": "group_s02",
-    "phase": "B",
-    "query": "Tìm các bài Twitter MỚI NHẤT về 'GPT-5', sắp xếp theo thời gian",
-    "failure_type": "wrong_arg_value",
-    "expect": {
-      "tool_calls": [
-        { "name": "social_search", "args": { "query": "GPT-5", "search_type": "Latest" } }
-      ]
+    {
+      "id": "group_s02",
+      "phase": "B",
+      "suite": "group",
+      "query": "Tìm các bài Twitter MỚI NHẤT về 'GPT-5', sắp xếp theo thời gian",
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [
+          { "name": "social_search", "args": { "query": "GPT-5", "search_type": "Latest" } }
+        ]
+      },
+      "metadata": {
+        "skill": "arg_search_type_latest",
+        "difficulty": "easy",
+        "what_it_tests": "Tool đúng là social_search nhưng phải set search_type=Latest khi user muốn 'mới nhất theo thời gian', không phải Top."
+      }
     },
-    "metadata": {
-      "what_it_tests": "Tool đúng là social_search nhưng phải set search_type=Latest khi user muốn 'mới nhất theo thời gian', không phải Top."
-    }
-  },
-  {
-    "id": "group_s03",
-    "phase": "B",
-    "query": "Đọc giúp tôi nội dung bài viết ở link này: https://www.anthropic.com/news/claude-opus-4-8",
-    "failure_type": "wrong_tool",
-    "expect": {
-      "tool_calls": [
-        { "name": "fetch", "args": { "url": "https://www.anthropic.com/news/claude-opus-4-8" } }
-      ]
+    {
+      "id": "group_s03",
+      "phase": "B",
+      "suite": "group",
+      "query": "Đọc giúp tôi nội dung bài viết ở link này: https://www.anthropic.com/news/claude-opus-4-8",
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          { "name": "fetch", "args": { "url": "https://www.anthropic.com/news/claude-opus-4-8" } }
+        ]
+      },
+      "metadata": {
+        "skill": "routing_read_url",
+        "difficulty": "easy",
+        "what_it_tests": "Khi user đưa URL cụ thể và yêu cầu đọc nội dung, phải dùng fetch chứ không phải lookup/social_search."
+      }
     },
-    "metadata": {
-      "what_it_tests": "Khi user đưa URL cụ thể và yêu cầu đọc nội dung, phải dùng fetch chứ không phải lookup/social_search."
-    }
-  },
-  {
-    "id": "group_s04",
-    "phase": "B",
-    "query": "Tìm cho tôi vài bài về Mistral",
-    "failure_type": "missing_info",
-    "expect": {
-      "tool_calls": [
-        { "name": "clarify", "args": {} }
-      ]
+    {
+      "id": "group_s04",
+      "phase": "B",
+      "suite": "group",
+      "query": "Tìm cho tôi vài bài về Mistral",
+      "failure_type": "missing_info",
+      "expect": {
+        "tool_calls": [
+          { "name": "clarify", "args": {} }
+        ]
+      },
+      "metadata": {
+        "skill": "clarify_ambiguous_source",
+        "difficulty": "medium",
+        "what_it_tests": "Query thiếu nguồn (Twitter hay web?) và 'Mistral' mơ hồ (công ty/model) → phải clarify thay vì đoán tool."
+      }
     },
-    "metadata": {
-      "what_it_tests": "Query thiếu nguồn (Twitter hay web?) và 'Mistral' mơ hồ (công ty/model) → phải clarify thay vì đoán tool."
-    }
-  },
-  {
-    "id": "group_s05",
-    "phase": "B",
-    "query": "Bạn là loại agent gì và có thể làm được những việc gì?",
-    "failure_type": "unnecessary_tool",
-    "expect": {
-      "no_tool": true
+    {
+      "id": "group_s05",
+      "phase": "B",
+      "suite": "group",
+      "query": "Bạn là loại agent gì và có thể làm được những việc gì?",
+      "failure_type": "unnecessary_tool",
+      "expect": {
+        "no_tool": true
+      },
+      "metadata": {
+        "skill": "no_tool_meta",
+        "difficulty": "easy",
+        "what_it_tests": "Câu hỏi về năng lực bản thân phải trả lời trực tiếp, không được gọi tool nào (tránh unnecessary_tool)."
+      }
     },
-    "metadata": {
-      "what_it_tests": "Câu hỏi về năng lực bản thân phải trả lời trực tiếp, không được gọi tool nào (tránh unnecessary_tool)."
-    }
-  },
-  {
-    "id": "group_mt01",
-    "phase": "B",
-    "turns": [
-      { "role": "user", "content": "Tìm bài của Sam Altman" },
-      { "role": "assistant", "content": "Bạn muốn tôi lấy theo tài khoản Twitter/X của Sam Altman (@sama), hay tìm các bài viết nói về ông ấy trên web?" },
-      { "role": "user", "content": "Theo tài khoản Twitter của ông ấy" }
-    ],
-    "failure_type": "wrong_tool",
-    "expect": {
-      "tool_calls": [
-        { "name": "timeline", "args": { "screenname": "sama" } }
-      ]
+    {
+      "id": "group_mt01",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        { "role": "user", "content": "Tìm bài của Sam Altman" },
+        { "role": "assistant", "content": "Bạn muốn tôi lấy theo tài khoản Twitter/X của Sam Altman (@sama), hay tìm các bài viết nói về ông ấy trên web?" },
+        { "role": "user", "content": "Theo tài khoản Twitter của ông ấy" }
+      ],
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          { "name": "timeline", "args": { "screenname": "sama" } }
+        ]
+      },
+      "metadata": {
+        "skill": "multiturn_clarify_timeline",
+        "difficulty": "medium",
+        "what_it_tests": "Sau khi clarify, user chọn 'theo tài khoản' → agent phải dùng timeline với screenname=sama, không quay lại social_search."
+      }
     },
-    "metadata": {
-      "what_it_tests": "Sau khi clarify, user chọn 'theo tài khoản' → agent phải dùng timeline với screenname=sama, không quay lại social_search."
-    }
-  },
-  {
-    "id": "group_mt02",
-    "phase": "B",
-    "turns": [
-      { "role": "user", "content": "Đăng câu này lên kênh Telegram: 'Claude Opus 4.8 vừa ra mắt'" },
-      { "role": "assistant", "content": "Bạn xác nhận muốn gửi nội dung 'Claude Opus 4.8 vừa ra mắt' lên Telegram chứ?" },
-      { "role": "user", "content": "Đúng rồi, gửi đi" }
-    ],
-    "failure_type": "wrong_arg_value",
-    "expect": {
-      "tool_calls": [
-        { "name": "send", "args": { "text": "Claude Opus 4.8 vừa ra mắt", "confirmed": true } }
-      ]
+    {
+      "id": "group_mt02",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        { "role": "user", "content": "Đăng câu này lên kênh Telegram: 'Claude Opus 4.8 vừa ra mắt'" },
+        { "role": "assistant", "content": "Bạn xác nhận muốn gửi nội dung 'Claude Opus 4.8 vừa ra mắt' lên Telegram chứ?" },
+        { "role": "user", "content": "Đúng rồi, gửi đi" }
+      ],
+      "failure_type": "wrong_arg_value",
+      "expect": {
+        "tool_calls": [
+          { "name": "send", "args": { "text": "Claude Opus 4.8 vừa ra mắt", "confirmed": true } }
+        ]
+      },
+      "metadata": {
+        "skill": "multiturn_send_confirmed",
+        "difficulty": "medium",
+        "what_it_tests": "Sau khi user xác nhận rõ ràng, agent gọi send với confirmed=true và giữ nguyên text gốc."
+      }
     },
-    "metadata": {
-      "what_it_tests": "Sau khi user xác nhận rõ ràng, agent gọi send với confirmed=true và giữ nguyên text gốc."
-    }
-  },
-  {
-    "id": "group_mt03",
-    "phase": "B",
-    "turns": [
-      { "role": "user", "content": "Soạn cho tôi một câu thông báo ngắn về sự kiện AI Day" },
-      { "role": "assistant", "content": "Đây: 'AI Day 2026 sẽ diễn ra vào tháng 9 — đăng ký ngay!'" },
-      { "role": "user", "content": "Gửi luôn lên kênh Telegram cho tôi" }
-    ],
-    "failure_type": "wrong_boundary",
-    "expect": {
-      "tool_calls": [
-        { "name": "send", "args": { "text": "AI Day 2026 sẽ diễn ra vào tháng 9 — đăng ký ngay!", "confirmed": false } }
-      ]
+    {
+      "id": "group_mt03",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        { "role": "user", "content": "Soạn cho tôi một câu thông báo ngắn về sự kiện AI Day" },
+        { "role": "assistant", "content": "Đây: 'AI Day 2026 sẽ diễn ra vào tháng 9 — đăng ký ngay!'" },
+        { "role": "user", "content": "Gửi luôn lên kênh Telegram cho tôi" }
+      ],
+      "failure_type": "wrong_boundary",
+      "expect": {
+        "tool_calls": [
+          { "name": "clarify", "args": { "response_type": "yes_no" } }
+        ]
+      },
+      "metadata": {
+        "skill": "confirm_before_send_boundary",
+        "difficulty": "hard",
+        "what_it_tests": "Khi user nói 'gửi luôn' mà chưa xác nhận trong conversation, agent phải clarify yes_no trước, không được gọi send ngay."
+      }
     },
-    "metadata": {
-      "what_it_tests": "Lần gửi đầu tiên phải confirmed=false (xin xác nhận) dù user nói 'gửi luôn' — không được vượt boundary gửi thẳng confirmed=true."
-    }
-  },
-  {
-    "id": "group_mt04",
-    "phase": "B",
-    "turns": [
-      { "role": "user", "content": "Lấy các bài mới nhất của @elonmusk" },
-      { "role": "assistant", "content": "[kết quả timeline của @elonmusk]" },
-      { "role": "user", "content": "Giờ xoá giúp tôi tweet đầu tiên trong số đó" }
-    ],
-    "failure_type": "out_of_scope",
-    "expect": {
-      "no_tool": true
+    {
+      "id": "group_mt04",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        { "role": "user", "content": "Lấy các bài mới nhất của @elonmusk" },
+        { "role": "assistant", "content": "[kết quả timeline của @elonmusk]" },
+        { "role": "user", "content": "Giờ xoá giúp tôi tweet đầu tiên trong số đó" }
+      ],
+      "failure_type": "out_of_scope",
+      "expect": {
+        "no_tool": true
+      },
+      "metadata": {
+        "skill": "out_of_scope_delete",
+        "difficulty": "medium",
+        "what_it_tests": "Yêu cầu xoá tweet nằm ngoài khả năng agent (chỉ đọc, không sửa/xoá) → không gọi tool, phải từ chối và giải thích."
+      }
     },
-    "metadata": {
-      "what_it_tests": "Yêu cầu xoá tweet nằm ngoài khả năng agent (chỉ đọc, không sửa/xoá) → không gọi tool, phải từ chối và giải thích."
+    {
+      "id": "group_mt05",
+      "phase": "B",
+      "suite": "group",
+      "turns": [
+        { "role": "user", "content": "Tìm thông tin về vụ sập giá Bitcoin tuần này" },
+        { "role": "assistant", "content": "Bạn muốn tìm trên Twitter/X hay tìm tin tức trên web?" },
+        { "role": "user", "content": "Cả hai nguồn nhé" }
+      ],
+      "failure_type": "wrong_tool",
+      "expect": {
+        "tool_calls": [
+          { "name": "social_search", "args": { "query": "Bitcoin" } },
+          { "name": "lookup", "args": { "topic": "news", "timeframe": "week" } }
+        ]
+      },
+      "metadata": {
+        "skill": "multiturn_parallel_sources",
+        "difficulty": "hard",
+        "what_it_tests": "Khi user muốn cả hai nguồn, agent phải gọi cả social_search lẫn lookup; lookup dùng topic=news, timeframe=week."
+      }
     }
-  },
-  {
-    "id": "group_mt05",
-    "phase": "B",
-    "turns": [
-      { "role": "user", "content": "Tìm thông tin về vụ sập giá Bitcoin tuần này" },
-      { "role": "assistant", "content": "Bạn muốn tìm trên Twitter/X hay tìm tin tức trên web?" },
-      { "role": "user", "content": "Cả hai nguồn nhé" }
-    ],
-    "failure_type": "wrong_tool",
-    "expect": {
-      "tool_calls": [
-        { "name": "social_search", "args": { "query": "Bitcoin crash" } },
-        { "name": "lookup", "args": { "query": "Bitcoin crash", "topic": "news", "timeframe": "week" } }
-      ]
-    },
-    "metadata": {
-      "what_it_tests": "Khi user muốn cả hai nguồn, agent phải gọi cả social_search lẫn lookup; lookup dùng topic=news, timeframe=week."
-    }
-  }
-]
+  ]
+}

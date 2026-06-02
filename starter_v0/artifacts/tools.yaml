@@ -116,3 +116,55 @@ tools:
         max_pages: {type: integer, default: 5, description: "Số trang"}
         max_chars: {type: integer, default: 8000, description: "Số ký tự"}
       required: [arxiv_url]
+
+  # ---------------- New bonus tools ----------------
+  - name: summarize
+    description: "Tóm tắt một đoạn văn bản dài thành danh sách bullet points ngắn gọn. Use after fetch, paper_text, or any tool that returns long text, when the user wants a condensed version. No API key needed — fully local processing."
+    parameters:
+      type: object
+      properties:
+        text: {type: string, default: "", description: "Nội dung cần tóm tắt"}
+        max_bullets: {type: integer, default: 5, description: "Số bullet tối đa (1-15)"}
+        language: {type: string, enum: [vi, en], default: "vi", description: "Ngôn ngữ label output"}
+      required: [text]
+
+  - name: translate
+    description: "Dịch văn bản sang ngôn ngữ khác. Use when the user explicitly asks to translate content to another language. Returns metadata and the original text for the model to produce the translation. Supported: vi, en, zh, ja, ko, fr, de, es, pt, it, ru, ar, th, id."
+    parameters:
+      type: object
+      properties:
+        text: {type: string, default: "", description: "Nội dung cần dịch"}
+        target_lang: {type: string, default: "vi", description: "Mã ngôn ngữ đích (vi, en, zh, ja, ko, fr, de, es...)"}
+        source_lang: {type: string, default: "auto", description: "Mã ngôn ngữ nguồn ('auto' để tự detect)"}
+      required: [text, target_lang]
+
+  - name: trending
+    description: "Lấy danh sách trending topics trên Twitter/X tại một địa điểm. Use when the user asks what is trending, what topics are hot, or popular discussions on Twitter without specifying a keyword. woeid: 1=Worldwide, 23424840=Vietnam, 23424977=USA, 1132599=Tokyo."
+    parameters:
+      type: object
+      properties:
+        woeid: {type: integer, default: 1, description: "Yahoo Where On Earth ID. 1=Worldwide, 23424840=Vietnam, 23424977=USA"}
+        limit: {type: integer, default: 10, description: "Số trending topics (1-25)"}
+      required: []
+
+  - name: weather
+    description: "Lấy thông tin thời tiết hiện tại theo tên thành phố từ OpenWeatherMap (free tier). Use when the user asks about current weather, temperature, or climate conditions for a city. Use metric units by default (Celsius)."
+    parameters:
+      type: object
+      properties:
+        city: {type: string, default: "", description: "Tên thành phố (ví dụ: Hanoi, Ho Chi Minh City, Tokyo)"}
+        units: {type: string, enum: [metric, imperial, standard], default: "metric", description: "Đơn vị: metric=Celsius, imperial=Fahrenheit, standard=Kelvin"}
+        lang: {type: string, default: "vi", description: "Ngôn ngữ mô tả thời tiết (vi, en, ja, ko...)"}
+      required: [city]
+
+  - name: save_note
+    description: "Lưu ghi chú hoặc nội dung quan trọng vào file Markdown local trong thư mục notes/. Use when the user wants to save research results, quotes, or summaries for later reference. Requires confirmed=true after user confirms. Always ask for confirmation first with clarify (yes_no) before setting confirmed=true."
+    parameters:
+      type: object
+      properties:
+        content: {type: string, default: "", description: "Nội dung cần lưu"}
+        title: {type: string, default: "", description: "Tiêu đề ghi chú (dùng làm tên file)"}
+        tag: {type: string, default: "", description: "Nhãn phân loại (ví dụ: research, ai, news, quote)"}
+        confirmed: {type: boolean, default: false, description: "Cờ xác nhận — chỉ ghi file khi true"}
+      required: [content]
+
