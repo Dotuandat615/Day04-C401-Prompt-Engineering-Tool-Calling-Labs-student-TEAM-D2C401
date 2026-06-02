@@ -17,6 +17,12 @@ from .policy.tool import search_company_policy
 from .social_search.tool import search_tweets
 from .send.tool import send_telegram
 from .lookup.tool import web_search
+# --- Bonus tools (new) ---
+from .summarize.tool import summarize_text
+from .translate.tool import translate_text
+from .trending.tool import get_trending
+from .weather.tool import get_weather
+from .save_note.tool import save_note
 
 
 # NOTE (starter_v0): tool names here are intentionally vague. These keys are the
@@ -25,6 +31,7 @@ from .lookup.tool import web_search
 #   artifacts/tools.yaml  ->  this dict  ->  data/eval_base.json + data/eval_research_extension.json
 # Otherwise the eval raises "not declared in tools.yaml" or scores every call as a name mismatch.
 TOOL_FUNCTIONS = {
+    # Core tools
     "clarify": ask_user,
     "timeline": get_user_tweets,
     "social_search": search_tweets,
@@ -35,6 +42,12 @@ TOOL_FUNCTIONS = {
     "policy": search_company_policy,
     "papers": arxiv_search,
     "paper_text": get_arxiv_paper_text,
+    # Bonus tools (new)
+    "summarize": summarize_text,
+    "translate": translate_text,
+    "trending": get_trending,
+    "weather": get_weather,
+    "save_note": save_note,
 }
 
 

@@ -3,9 +3,6 @@ from providers.openrouter_provider import OpenRouterProvider
 from providers.anthropic_provider import AnthropicProvider
 from providers.gemini_provider import GeminiProvider
 import os
-import dotenv
-
-dotenv.load_dotenv()
 
 
 def make_provider(name: str):
